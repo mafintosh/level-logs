@@ -11,7 +11,7 @@ var Logs = function (db, opts) {
   if (!opts) opts = {}
 
   this.db = db
-  this.sep = opts.separator || opts.sep || '!'  
+  this.sep = opts.separator || opts.sep || '!'
   this.prefix = opts.prefix ? this.sep + opts.prefix + this.sep : ''
   this.valueEncoding = opts.valueEncoding
 }

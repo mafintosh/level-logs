@@ -6,6 +6,8 @@ Store multiple append only logs in leveldb.
 npm install level-logs
 ```
 
+[![build status](http://img.shields.io/travis/mafintosh/level-logs.svg?style=flat)](http://travis-ci.org/mafintosh/level-logs)
+
 ## Usage
 
 ``` js

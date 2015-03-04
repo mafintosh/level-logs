@@ -79,7 +79,8 @@ Logs.prototype.createValueStream = function (log, opts) {
   return this.db.createValueStream({
     gt: this.key(log, opts.since || 0),
     lt: this.key(log, opts.until || -1),
-    valueEncoding: this.valueEncoding
+    valueEncoding: this.valueEncoding,
+    reverse: opts.reverse
   })
 }
 
@@ -91,7 +92,8 @@ Logs.prototype.createReadStream = function (log, opts) {
   var rs = this.db.createReadStream({
     gt: this.key(log, opts.since || 0),
     lt: this.key(log, opts.until || -1),
-    valueEncoding: this.valueEncoding
+    valueEncoding: this.valueEncoding,
+    reverse: opts.reverse
   })
 
   var format = through.obj(function (data, enc, cb) {

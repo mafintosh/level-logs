@@ -1,6 +1,6 @@
 {
   "name": "level-logs",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Store multiple append only logs in leveldb.",
   "main": "index.js",
   "dependencies": {

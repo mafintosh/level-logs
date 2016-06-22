@@ -30,6 +30,41 @@ tape('can add', function (t) {
   })
 })
 
+tape('three appends', function (t) {
+  var lgs = logs(memdb(), {valueEncoding: 'json'})
+
+  lgs.append('mathias', {hello: 'world'}, function () {
+    lgs.append('mathias', {hej: 'verden'}, function () {
+      lgs.append('mathias', {privet: 'mir'}, function () {
+        collect(lgs.createReadStream('mathias'), function (err, datas) {
+          if (err) throw err
+
+          t.same(datas, [{
+            log: 'mathias',
+            seq: 1,
+            value: {
+              hello: 'world'
+            }
+          }, {
+            log: 'mathias',
+            seq: 2,
+            value: {
+              hej: 'verden'
+            }
+          }, {
+            log: 'mathias',
+            seq: 3,
+            value: {
+              privet: 'mir'
+            }
+          }], 'saved logs')
+          t.end()
+        })
+      })
+    })
+  })
+})
+
 tape('append sequence numbers', function (t) {
   var lgs = logs(memdb(), {valueEncoding: 'json'})
   var returned = 0

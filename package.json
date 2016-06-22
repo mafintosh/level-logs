@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "memdb": "^0.2.0",
-    "standard": "^2.3.1",
+    "standard": "^7.1.2",
     "tape": "^3.5.0"
   },
   "scripts": {

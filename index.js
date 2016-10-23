@@ -22,14 +22,17 @@ Logs.prototype.key = function (log, seq) {
 
 Logs.prototype.list = function (cb) {
   var self = this
-
   var prev = this.prefix
+  var end = prev + '\xff'
+
   var rs = from.obj(function (size, cb) {
-    collect(self.db.createKeyStream({gt: prev, limit: 1}), function (err, keys) {
+    collect(self.db.createKeyStream({gt: prev, lt: end, limit: 1}), function (err, keys) {
       if (err) return cb(err)
+
       if (!keys.length) return cb(null, null)
-      var log = keys[0].slice(0, keys[0].lastIndexOf(self.sep))
+      var log = keys[0].slice(self.prefix.length, keys[0].lastIndexOf(self.sep))
       prev = self.key(log, -1)
+
       cb(null, log)
     })
   })

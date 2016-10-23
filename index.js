@@ -101,8 +101,8 @@ Logs.prototype.createReadStream = function (log, opts) {
 
   var format = through.obj(function (data, enc, cb) {
     var key = data.key
-    var log = key.slice(0, key.lastIndexOf(self.sep))
-    var seq = lexint.unpack(key.slice(log.length + 1), 'hex')
+    var log = key.slice(self.prefix.length, key.lastIndexOf(self.sep))
+    var seq = lexint.unpack(key.slice(self.prefix.length + log.length + 1), 'hex')
     cb(null, {log: log, seq: seq, value: data.value})
   })
 

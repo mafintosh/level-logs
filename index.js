@@ -83,7 +83,8 @@ Logs.prototype.createValueStream = function (log, opts) {
     gt: this.key(log, opts.since || 0),
     lt: this.key(log, opts.until || -1),
     valueEncoding: this.valueEncoding,
-    reverse: opts.reverse
+    reverse: opts.reverse,
+    limit: opts.limit
   })
 }
 
@@ -96,7 +97,8 @@ Logs.prototype.createReadStream = function (log, opts) {
     gt: this.key(log, opts.since || 0),
     lt: this.key(log, opts.until || -1),
     valueEncoding: this.valueEncoding,
-    reverse: opts.reverse
+    reverse: opts.reverse,
+    limit: opts.limit
   })
 
   var format = through.obj(function (data, enc, cb) {

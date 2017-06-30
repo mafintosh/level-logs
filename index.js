@@ -14,6 +14,12 @@ var Logs = function (db, opts) {
   this.sep = opts.separator || opts.sep || '!'
   this.prefix = opts.prefix ? this.sep + opts.prefix + this.sep : ''
   this.valueEncoding = opts.valueEncoding
+
+  // Global lock used to ensure sequential numbering.
+  this.locked = false
+  // FIFO of write operations waiting for the global lock.
+  // [[method, args...], [method, args...], ...]
+  this.pending = []
 }
 
 Logs.prototype.key = function (log, seq) {
@@ -44,21 +50,70 @@ Logs.prototype.get = function (log, seq, cb) {
   this.db.get(this.key(log, seq), {valueEncoding: this.valueEncoding}, cb)
 }
 
-Logs.prototype.put = function (log, seq, value, cb) {
-  this.db.put(this.key(log, seq), value, {valueEncoding: this.valueEncoding}, cb)
-}
-
-Logs.prototype.append = function (log, value, cb) {
-  if (!cb) cb = noop
+Logs.prototype.put = function put (log, seq, value, cb) {
   var self = this
 
-  this.head(log, function (err, seq) {
-    if (err) return cb(err)
-    self.put(log, seq + 1, value, function (err) {
-      if (err) return cb(err)
-      cb(null, seq + 1)
+  // If the current head of log "x" is 55 and we put("x", 99, value),
+  // the put will advance the head of "x" to 99. Since puts can advance
+  // the head of a log, we need the global lock for puts, too.
+  if (self.locked) return this.pending.push([put, log, seq, value, cb])
+  self.locked = true
+  var opts = {valueEncoding: self.valueEncoding}
+  self.db.put(self.key(log, seq), value, opts, function (err) {
+    doPending.call(self)
+    cb(err)
+  })
+}
+
+Logs.prototype.append = function append (log, value, cb) {
+  var self = this
+
+  if (!cb) cb = noop
+  // Because head() is async, sync calls like
+  //
+  //     logs.append("x", "a")
+  //     logs.append("x", "b")
+  //
+  // may calculate the same head value and try to write to the same key.
+  // As a result, the second append call will overwrite "a" with "b" at
+  // new head.
+  //
+  // To prevent this, every write to the underlying LevelUP takes out
+  // a global lock. While locked, all other put and append calls get
+  // queued for execution when the lock becomes available again.
+  //
+  // The problem does't affect nested async appends like:
+  //
+  //     logs.append("x", "a", function () {
+  //         logs.append("x", "b", function () {
+  //             ...
+  //         })
+  //     })
+  //
+  if (self.locked) return this.pending.push([append, log, value, cb])
+  self.locked = true
+  self.head(log, function (err, head) {
+    if (err) {
+      doPending.call(self)
+      return cb(err)
+    }
+    var seq = head + 1
+    var key = self.key(log, seq)
+    var opts = {valueEncoding: self.valueEncoding}
+    self.db.put(key, value, opts, function (err) {
+      doPending.call(self)
+      cb(err, seq)
     })
   })
+}
+
+// Unlock and execute the next waiting write operation.
+function doPending () {
+  this.locked = false
+  if (this.pending.length !== 0) {
+    var next = this.pending.shift()
+    next[0].apply(this, next.slice(1))
+  }
 }
 
 Logs.prototype.head = function (log, cb) {
